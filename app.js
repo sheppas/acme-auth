@@ -6,16 +6,33 @@ const {
 } = require("./db");
 const path = require("path");
 
+const requireToken = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization;
+    const returnedUser = await User.byToken(token);
+    req.user = returnedUser;
+    next();
+  } catch (err) {
+    next(err)
+  }
+}
+
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
-app.get("/api/users/:id/notes", async (req, res, next) => {
+app.get("/api/users/:id/notes", requireToken, async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.params.id, {
+    // const token = req.headers.authorization;
+    // const returnedUser = await User.byToken(token);
+    if(req.user){
+      const user = await User.findByPk(req.params.id, {
       include: {
         model: Note,
       },
     });
     res.send(user);
+    } else {
+      res.status(401).send("error, invalid login");
+    }
   } catch (error) {
     next(error);
   }
@@ -29,18 +46,18 @@ app.post("/api/auth", async (req, res, next) => {
   }
 });
 
-app.get("/api/auth", async (req, res, next) => {
+app.get("/api/auth", requireToken, async (req, res, next) => {
   try {
     // res.send(await User.byToken(req.headers.authorization));
-    const token = req.headers.authorization;
-    const returnedUser = await User.byToken(token);
+    // const token = req.headers.authorization;
+    // const returnedUser = await User.byToken(token);
 
     // check userId from JWT matches req
-    if (returnedUser) {
-      req.user = returnedUser;
+    if (req.user) {
+      // req.user = returnedUser;
       res.send(req.user);
     } else {
-      res.status(404).send("error, invalid login");
+      res.status(401).send("error, invalid login");
     }
   } catch (ex) {
     next(ex);

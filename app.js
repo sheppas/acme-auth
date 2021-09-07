@@ -31,7 +31,17 @@ app.post("/api/auth", async (req, res, next) => {
 
 app.get("/api/auth", async (req, res, next) => {
   try {
-    res.send(await User.byToken(req.headers.authorization));
+    // res.send(await User.byToken(req.headers.authorization));
+    const token = req.headers.authorization;
+    const returnedUser = await User.byToken(token);
+
+    // check userId from JWT matches req
+    if (returnedUser) {
+      req.user = returnedUser;
+      res.send(req.user);
+    } else {
+      res.status(404).send("error, invalid login");
+    }
   } catch (ex) {
     next(ex);
   }

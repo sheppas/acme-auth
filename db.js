@@ -43,20 +43,18 @@ User.authenticate = async ({ username, password }) => {
   const user = await User.findOne({
     where: {
       username,
-      password,
+      // password,
     },
   });
+
   if (user) {
-    const result = await bcrypt.compare(password, user.password)
-    console.log("this is the Password", password)
-    console.log("this is the hashed password", user.password)
-    console.log("this is the result", result)
+    const result = await bcrypt.compare(password, user.password);
+    // console.log("this is the Password", password);
+    // console.log("this is the hashed password", user.password);
+    // console.log("this is the result", result);
     if (result) {
       return jwt.sign({ id: user.id }, tokenSecret);
     }
-    const error = Error("bad credentials sarah-made");
-    error.status = 401;
-    throw error;
   }
   const error = Error("bad credentials");
   error.status = 401;
@@ -82,11 +80,14 @@ const syncAndSeed = async () => {
   };
 };
 
-User.beforeCreate = (user) => {
-  const password = user.password;
-  console.log("BANANA")
-  user.password = bcrypt.hash(password, 5, function(err, hash){console.log(hash)});
-}
+User.beforeCreate(async (user) => {
+  try {
+    const password = user.password;
+    user.password = await bcrypt.hash(password, 5);
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 module.exports = {
   syncAndSeed,

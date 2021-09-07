@@ -4,6 +4,7 @@ const config = {
   logging: false,
 };
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
 // secret key, change later
 const tokenSecret = process.env.JWT;
@@ -46,7 +47,16 @@ User.authenticate = async ({ username, password }) => {
     },
   });
   if (user) {
-    return jwt.sign({ id: user.id }, tokenSecret);
+    const result = await bcrypt.compare(password, user.password)
+    console.log("this is the Password", password)
+    console.log("this is the hashed password", user.password)
+    console.log("this is the result", result)
+    if (result) {
+      return jwt.sign({ id: user.id }, tokenSecret);
+    }
+    const error = Error("bad credentials sarah-made");
+    error.status = 401;
+    throw error;
   }
   const error = Error("bad credentials");
   error.status = 401;
@@ -71,6 +81,12 @@ const syncAndSeed = async () => {
     },
   };
 };
+
+User.beforeCreate = (user) => {
+  const password = user.password;
+  console.log("BANANA")
+  user.password = bcrypt.hash(password, 5, function(err, hash){console.log(hash)});
+}
 
 module.exports = {
   syncAndSeed,
